@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  schoolcafe:
+    build: .
+    container_name: schoolcafe-menu-sync
+    restart: unless-stopped
+    environment:
+      LUNCH_GCAL_ID: ${LUNCH_GCAL_ID:-primary}
+      GOOGLE_CLIENT_SECRET_FILE: /app/secrets/client_secret.json
+      GOOGLE_TOKEN_FILE: /app/data/token.json
+      RUN_ON_STARTUP: ${RUN_ON_STARTUP:-false}
+      TZ: America/Chicago
+    volumes:
+      # Mount Google OAuth credentials (read-only)
+      - ./client_secret.json:/app/secrets/client_secret.json:ro
+      
+      # Mount directory for persistent token storage
+      - ./data:/app/data
+      
+      # Optional: Mount logs directory
+      - ./logs:/var/log
+      
+      # DEV: Mount source code (changes apply without rebuild)
+      - ./src:/app/src:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

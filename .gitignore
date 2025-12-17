@@ -1,0 +1,39 @@
+# Google OAuth credentials and tokens
+client_secret.json
+token.json
+data/token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Logs
+logs/
+*.log
+/var/log/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+
+# Backup
+bak/
+*.bak
+*.backup
+
+# Data directory
+data/

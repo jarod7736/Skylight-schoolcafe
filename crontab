@@ -1,0 +1,4 @@
+# Run school lunch menu sync every Sunday at 6:00 AM CST
+0 6 * * 0 cd /app && /usr/local/bin/python3 src/getMenus.py >> /var/log/cron.log 2>&1
+
+# Empty line required at end of crontab
