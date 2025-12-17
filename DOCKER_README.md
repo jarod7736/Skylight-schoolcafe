@@ -232,3 +232,26 @@ For issues:
 1. Check container logs: `docker-compose logs`
 2. Check cron logs: `docker-compose exec schoolcafe cat /var/log/cron.log`
 3. Test script manually: `docker-compose exec schoolcafe python3 src/getMenus.py`
+
+## Development vs Production
+
+### Production (Default)
+Code is baked into the image for portability and consistency:
+```bash
+# Requires rebuild when code changes
+docker-compose up -d --build
+```
+
+### Development Mode
+Source code is mounted as a volume - changes apply immediately without rebuild:
+```bash
+# Use dev compose file
+docker-compose -f docker-compose.dev.yml up -d
+
+# Code changes apply immediately - just restart container
+docker-compose -f docker-compose.dev.yml restart
+```
+
+**When to use each:**
+- **Production**: `docker-compose.yml` - Code baked in, more portable
+- **Development**: `docker-compose.dev.yml` - Live code updates, no rebuild needed
