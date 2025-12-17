@@ -17,19 +17,19 @@ from googleapiclient.discovery import build
 # ---------------------------
 # FIXED IDS (from you)
 # ---------------------------
-DISTRICT_ID = 400
 SCHOOL_ID = "10de21a6-64e7-4bd0-9d8c-8a17d2cfe022"
 SERVING_LINE = "Lunch"
 MEAL_TYPE = "Lunch"
 GRADE = "08"  # 8th grade (your example used 06)
 ENABLED_WEEKEND_MENUS = False
 PERSON_ID = None  # keep None -> sends PersonId=null
+DISTRICT_ID = 400
+SCHOOL_ID = "10de21a6-64e7-4bd0-9d8c-8a17d2cfe022"
 
 # ---------------------------
 # CONFIG
 # ---------------------------
 TIMEZONE = "America/Chicago"
-SERVING_LINE_PREFERRED_REGEX = r"Lunch"
 
 # Google Calendar target (a calendar Skylight syncs)
 GOOGLE_CALENDAR_ID = os.environ.get("LUNCH_GCAL_ID", "primary")
@@ -177,15 +177,6 @@ def upsert_week_events(svc, calendar_id: str, week_items: dict[date, list[str]],
             + "\n".join(f"• {x}" for x in items)
         )
 
-        event_id = stable_event_id(d)
-        body = {
-            "summary": title,
-            "description": description,
-            "start": {"dateTime": start_dt.isoformat(), "timeZone": TIMEZONE},
-            "end": {"dateTime": end_dt.isoformat(), "timeZone": TIMEZONE},
-            "extendedProperties": {"private": {"source": "schoolcafe", "schoolId": SCHOOL_ID}}
-        }
-
         # Search for existing events on this date to avoid duplicates
         day_start = datetime.combine(d, time(0, 0), tz)
         day_end = datetime.combine(d, time(23, 59, 59), tz)
@@ -197,8 +188,8 @@ def upsert_week_events(svc, calendar_id: str, week_items: dict[date, list[str]],
             singleEvents=True
         ).execute()
 
-        # Check if an identical event already exists
-        identical_event_found = False
+        # Check if an identical event already exists (any ID)
+        found_event = None
         for event in existing_events.get('items', []):
             event_start = event.get('start', {}).get('dateTime', '')
             event_summary = event.get('summary', '')
@@ -208,21 +199,27 @@ def upsert_week_events(svc, calendar_id: str, week_items: dict[date, list[str]],
             if (event_start == start_dt.isoformat() and
                 event_summary == title and
                 event_description == description):
-                identical_event_found = True
+                found_event = event
                 print(f"Skipping {d}: identical event already exists (ID: {event.get('id')})")
                 break
 
-        if identical_event_found:
-            continue
+        # Only create if no identical event exists
+        if found_event is None:
+            event_id = stable_event_id(d)
+            body = {
+                "iCalUID": event_id,
+                "summary": title,
+                "description": description,
+                "start": {"dateTime": start_dt.isoformat(), "timeZone": TIMEZONE},
+                "end": {"dateTime": end_dt.isoformat(), "timeZone": TIMEZONE},
+                "extendedProperties": {"private": {"source": "schoolcafe", "schoolId": SCHOOL_ID}}
+            }
 
-        # Try to update our stable ID event, or create new if it doesn't exist
-        try:
-            body_with_id = {"id": event_id, **body}
-            svc.events().update(calendarId=calendar_id, eventId=event_id, body=body_with_id).execute()
-            print(f"Updated event for {d}")
-        except Exception:
-            svc.events().insert(calendarId=calendar_id, body=body).execute()
-            print(f"Created new event for {d}")
+            try:
+                svc.events().insert(calendarId=calendar_id, body=body).execute()
+                print(f"Created new event for {d}")
+            except Exception as e:
+                print(f"Error creating event for {d}: {e}")
 
 def fetch_weekly_menu_by_grade(serving_date: date):
     """
@@ -362,6 +359,15 @@ def iter_days_from_payload(payload: dict):
         if isinstance(v, dict):
             yield d, v
 
+import base64, hashlib
+
+def make_event_id(prefix: str, unique: str, n: int = 26) -> str:
+    # base32hex => 0-9, A-V; lowercase it and trim
+    digest = hashlib.sha1(unique.encode("utf-8")).digest()
+    token = base64.b32hexencode(digest).decode("ascii").lower().rstrip("=")
+    return f"{prefix}{token[:n]}"
+
+
 
 def main():
     tz = ZoneInfo(TIMEZONE)
@@ -397,20 +403,35 @@ def main():
                     "menu_item_id": item.get("MenuItemId"),
                 })
 
+    print(f"DEBUG week_items count: {len(week_items)}")
+
     from collections import defaultdict
+    from datetime import date
+
     items_by_day = defaultdict(list)
 
     for it in week_items:
         # it["date"] is "YYYY-MM-DD"
         d = date.fromisoformat(it["date"])
-        desc = it.get("description", "")
-        if desc and desc not in items_by_day[d]:
-            items_by_day[d].append(desc)
+        items_by_day[d].append(it)
 
     items_by_day = dict(items_by_day)
 
+    print(f"DEBUG items_by_day days: {len(items_by_day)} -> {[d.isoformat() for d in sorted(items_by_day.keys())]}")
+
+
+    # 👇 AND THEN your existing “if none, raise” should use week_items
     if not week_items:
         raise RuntimeError(f"No menu items found for week starting {week_start}. Raw payload: {payload}")
+
+
+    # items_by_day = normalize_weekly_payload(payload)
+    # days = list(iter_days_from_payload(payload))
+    # print(f"DEBUG day keys found: {sorted([d.isoformat() for d, _ in days])}")
+
+
+    # if not items_by_day:
+    #     raise RuntimeError(f"No menu items found for week starting {week_start}. Raw payload: {payload}")
 
     svc = gcal_service()
     upsert_week_events(svc, GOOGLE_CALENDAR_ID, items_by_day, tz, SERVING_LINE)
