@@ -18,14 +18,13 @@ from googleapiclient.discovery import build
 # ---------------------------
 # FIXED IDS (from you)
 # ---------------------------
-SCHOOL_ID = "10de21a6-64e7-4bd0-9d8c-8a17d2cfe022"
-SERVING_LINE = "Lunch"
-MEAL_TYPE = "Lunch"
-GRADE = "08"  # 8th grade (your example used 06)
+SCHOOL_ID = os.environ.get("SCHOOLCAFE_SCHOOL_ID", "10de21a6-64e7-4bd0-9d8c-8a17d2cfe022")
+DISTRICT_ID = int(os.environ.get("SCHOOLCAFE_DISTRICT_ID", "400"))
+GRADE = os.environ.get("SCHOOLCAFE_GRADE", "08")
+SERVING_LINE = os.environ.get("SCHOOLCAFE_SERVING_LINE", "Lunch")
+MEAL_TYPE = os.environ.get("SCHOOLCAFE_MEAL_TYPE", "Lunch")
 ENABLED_WEEKEND_MENUS = False
 PERSON_ID = None  # keep None -> sends PersonId=null
-DISTRICT_ID = 400
-SCHOOL_ID = "10de21a6-64e7-4bd0-9d8c-8a17d2cfe022"
 
 # ---------------------------
 # CONFIG
@@ -410,7 +409,6 @@ def main():
                     "menu_item_id": item.get("MenuItemId"),
                 })
 
-    print(f"DEBUG week_items count: {len(week_items)}")
 
     from collections import defaultdict
     from datetime import date
@@ -424,21 +422,8 @@ def main():
 
     items_by_day = dict(items_by_day)
 
-    print(f"DEBUG items_by_day days: {len(items_by_day)} -> {[d.isoformat() for d in sorted(items_by_day.keys())]}")
-
-
-    # 👇 AND THEN your existing “if none, raise” should use week_items
     if not week_items:
-        raise RuntimeError(f"No menu items found for week starting {week_start}. Raw payload: {payload}")
-
-
-    # items_by_day = normalize_weekly_payload(payload)
-    # days = list(iter_days_from_payload(payload))
-    # print(f"DEBUG day keys found: {sorted([d.isoformat() for d, _ in days])}")
-
-
-    # if not items_by_day:
-    #     raise RuntimeError(f"No menu items found for week starting {week_start}. Raw payload: {payload}")
+        raise RuntimeError(f”No menu items found for week starting {week_start}. Raw payload: {payload}”)
 
     svc = gcal_service()
     upsert_week_events(svc, GOOGLE_CALENDAR_ID, items_by_day, tz, SERVING_LINE)

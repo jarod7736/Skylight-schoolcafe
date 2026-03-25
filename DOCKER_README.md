@@ -37,6 +37,13 @@ LUNCH_GCAL_ID=your-calendar-id@group.calendar.google.com
 
 # Run sync immediately on startup (useful for testing)
 RUN_ON_STARTUP=false
+
+# SchoolCafe school/district identifiers (defaults shown below)
+SCHOOLCAFE_SCHOOL_ID=10de21a6-64e7-4bd0-9d8c-8a17d2cfe022
+SCHOOLCAFE_DISTRICT_ID=400
+SCHOOLCAFE_GRADE=08
+SCHOOLCAFE_SERVING_LINE=Lunch
+SCHOOLCAFE_MEAL_TYPE=Lunch
 ```
 
 To find your calendar ID:
