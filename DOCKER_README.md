@@ -241,18 +241,26 @@ For issues:
 
 ## CI/CD: Automated Docker Builds
 
-The Docker image is automatically built and pushed to GitHub Container Registry (ghcr.io) on every push to `main`.
+The Docker image is automatically built and pushed to Docker Hub on every push to `main`.
+
+### First-Time Setup
+
+1. Create a [Docker Hub](https://hub.docker.com/) account if you don't have one.
+2. Generate a personal access token: Docker Hub → Account Settings → Security → New Access Token.
+3. Add two secrets to this GitHub repo (Settings → Secrets and variables → Actions → New repository secret):
+   - `DOCKERHUB_USERNAME` — your Docker Hub username
+   - `DOCKERHUB_TOKEN` — the personal access token you just created
+
+After that, images auto-push on every push to `main` — no further setup needed.
 
 ### Image Location
 
 ```
-ghcr.io/jarod7736/skylight-schoolcafe:latest
-ghcr.io/jarod7736/skylight-schoolcafe:<git-sha>  # pinned version tag
+jarod7736/skylight-schoolcafe:latest
+jarod7736/skylight-schoolcafe:<git-sha>  # pinned version tag
 ```
 
 ### Pulling the Latest Image (Synology / Remote Hosts)
-
-`docker-compose.yml` is pre-configured to pull from ghcr.io. To update to the latest image:
 
 ```bash
 docker-compose pull
@@ -268,7 +276,7 @@ To build the image locally instead of pulling from the registry, edit `docker-co
 ```yaml
 services:
   schoolcafe:
-    # image: ghcr.io/jarod7736/skylight-schoolcafe:latest
+    # image: jarod7736/skylight-schoolcafe:latest
     build: .
 ```
 
@@ -281,7 +289,7 @@ docker-compose -f docker-compose.dev.yml up -d
 ## Development vs Production
 
 ### Production (Default)
-Pulls the pre-built image from ghcr.io — no local build required:
+Pulls the pre-built image from Docker Hub — no local build required:
 ```bash
 docker-compose pull && docker-compose up -d
 ```
@@ -297,5 +305,5 @@ docker-compose -f docker-compose.dev.yml restart
 ```
 
 **When to use each:**
-- **Production / Synology**: `docker-compose.yml` - Pulls from ghcr.io, no build needed
+- **Production / Synology**: `docker-compose.yml` - Pulls from Docker Hub, no build needed
 - **Development**: `docker-compose.dev.yml` - Live code updates, no rebuild needed
