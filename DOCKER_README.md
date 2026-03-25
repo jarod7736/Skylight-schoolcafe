@@ -232,13 +232,51 @@ For issues:
 2. Check cron logs: `docker-compose exec schoolcafe cat /var/log/cron.log`
 3. Test script manually: `docker-compose exec schoolcafe python3 src/getMenus.py`
 
+## CI/CD: Automated Docker Builds
+
+The Docker image is automatically built and pushed to GitHub Container Registry (ghcr.io) on every push to `main`.
+
+### Image Location
+
+```
+ghcr.io/jarod7736/skylight-schoolcafe:latest
+ghcr.io/jarod7736/skylight-schoolcafe:<git-sha>  # pinned version tag
+```
+
+### Pulling the Latest Image (Synology / Remote Hosts)
+
+`docker-compose.yml` is pre-configured to pull from ghcr.io. To update to the latest image:
+
+```bash
+docker-compose pull
+docker-compose up -d
+```
+
+No rebuild is required — the image is pre-built in CI.
+
+### Local Development Build
+
+To build the image locally instead of pulling from the registry, edit `docker-compose.yml` and swap the `image` / `build` lines:
+
+```yaml
+services:
+  schoolcafe:
+    # image: ghcr.io/jarod7736/skylight-schoolcafe:latest
+    build: .
+```
+
+Or use the dev compose file, which mounts source code for live editing without rebuilds:
+
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+
 ## Development vs Production
 
 ### Production (Default)
-Code is baked into the image for portability and consistency:
+Pulls the pre-built image from ghcr.io — no local build required:
 ```bash
-# Requires rebuild when code changes
-docker-compose up -d --build
+docker-compose pull && docker-compose up -d
 ```
 
 ### Development Mode
@@ -252,5 +290,5 @@ docker-compose -f docker-compose.dev.yml restart
 ```
 
 **When to use each:**
-- **Production**: `docker-compose.yml` - Code baked in, more portable
+- **Production / Synology**: `docker-compose.yml` - Pulls from ghcr.io, no build needed
 - **Development**: `docker-compose.dev.yml` - Live code updates, no rebuild needed
