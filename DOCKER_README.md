@@ -46,25 +46,24 @@ To find your calendar ID:
 
 ### 4. First-Time Authentication
 
-On the first run, you'll need to authenticate with Google:
+**First-time auth must be done on a machine with a browser — Docker has no browser.**
 
 ```bash
-# Start container and run sync immediately
-RUN_ON_STARTUP=true docker-compose up
-
-# Follow the authentication URL in the logs
-# After authentication, token.json will be saved to ./data/
-```
-
-Alternatively, authenticate locally first:
-
-```bash
-# Run locally to authenticate
+# On your local machine (not inside Docker):
 python3 src/getMenus.py
-
-# Move token to data directory
-mv token.json data/
 ```
+
+A browser window will open for Google OAuth. After you approve access, a `token.json`
+file is written in the current directory. Copy it into the `data/` directory:
+
+```bash
+cp token.json data/
+```
+
+Once `data/token.json` exists with a `refresh_token`, the container will silently
+refresh credentials on every subsequent run without any browser interaction. You
+should never need to repeat this step unless you revoke the token in Google Account
+settings or delete `data/token.json`.
 
 ### 5. Start the Container
 

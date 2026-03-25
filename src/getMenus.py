@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 import requests
 from dateutil.relativedelta import relativedelta, MO
 
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -149,7 +150,13 @@ def gcal_service():
     creds = None
     if os.path.exists(GOOGLE_TOKEN_FILE):
         creds = Credentials.from_authorized_user_file(GOOGLE_TOKEN_FILE, SCOPES)
-    if not creds or not creds.valid:
+    if creds and not creds.valid and creds.expired and creds.refresh_token:
+        # Silently refresh — works headlessly in Docker
+        creds.refresh(Request())
+        with open(GOOGLE_TOKEN_FILE, "w") as f:
+            f.write(creds.to_json())
+    elif not creds or not creds.valid:
+        # No token at all — requires a browser (first-time local run only)
         flow = InstalledAppFlow.from_client_secrets_file(GOOGLE_CLIENT_SECRET_FILE, SCOPES)
         creds = flow.run_local_server(port=0)
         with open(GOOGLE_TOKEN_FILE, "w") as f:
