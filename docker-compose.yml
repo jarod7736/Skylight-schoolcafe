@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   schoolcafe:
-    image: ghcr.io/jarod7736/skylight-schoolcafe:latest
-    # build: .  # Uncomment to build locally instead of pulling from ghcr.io
+    image: docker.io/jarod7736/skylight-schoolcafe:latest
+    # build: .  # Uncomment to build locally instead of pulling from Docker Hub
     container_name: schoolcafe-menu-sync
     restart: unless-stopped
     environment:
